@@ -331,7 +331,7 @@ public class Document implements Parent {
      * @throws IllegalAddException if any item in the collection
      *         already has a parent or is of an illegal type.
      */
-    public Document addContent(Collection c) {
+    public Document addContent(Collection<? extends Content> c) {
         content.addAll(c);
         return this;
     }
@@ -365,7 +365,7 @@ public class Document implements Parent {
      * @throws IllegalAddException if any item in the collection
      *         already has a parent or is of an illegal type.
      */
-    public Document addContent(int index, Collection c) {
+    public Document addContent(int index, Collection<? extends Content>  c) {
         content.addAll(index, c);
         return this;
     }
