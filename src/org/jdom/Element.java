@@ -372,12 +372,12 @@ public class Element extends Content implements Parent {
      * @return                     a List of the additional namespace
      *                             declarations
      */
-    public List getAdditionalNamespaces() {
+    public List<Namespace> getAdditionalNamespaces() {
         // Not having the returned list be live allows us to avoid creating a
         // new list object when XMLOutputter calls this method on an element
         // with an empty list.
         if (additionalNamespaces == null) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
         return Collections.unmodifiableList(additionalNamespaces);
     }
@@ -652,7 +652,7 @@ public class Element extends Content implements Parent {
      *         <code>{@link CDATA}</code>, and
      *         <code>{@link EntityRef}</code> objects.
      */
-    public List getContent() {
+    public List<? extends Content> getContent() {
         return content;
     }
 
@@ -668,7 +668,7 @@ public class Element extends Content implements Parent {
      * @param filter <code>Filter</code> to apply
      * @return <code>List</code> - filtered Element content
      */
-    public List getContent(Filter filter) {
+    public <T extends Content> List<T> getContent(Filter<T> filter){
         return content.getView(filter);
     }
 
@@ -689,11 +689,11 @@ public class Element extends Content implements Parent {
      * @param filter filter to select which content to remove
      * @return list of the old children detached from this parent
      */
-    public List removeContent(Filter filter) {
-        List old = new ArrayList();
-        Iterator itr = content.getView(filter).iterator();
+    public <T extends Content> List<T> removeContent(Filter<T> filter) {
+        List<T> old = new ArrayList<T>();
+        Iterator<T> itr = content.getView(filter).iterator();
         while (itr.hasNext()) {
-            Content child = (Content) itr.next();
+            T child = itr.next();
             old.add(child);
             itr.remove();
         }
