@@ -829,7 +829,7 @@ public class Element extends Content implements Parent {
      * @throws IllegalAddException if any item in the collection
      *         already has a parent or is of an inappropriate type.
      */
-    public Element addContent(Collection collection) {
+    public Element addContent(Collection<? extends Content> collection) {
         content.addAll(collection);
         return this;
     }
