@@ -735,7 +735,7 @@ public class Element extends Content implements Parent {
      * @throws IllegalAddException if the List contains objects of
      *         illegal types or with existing parentage.
      */
-    public Element setContent(Collection newContent) {
+    public Element setContent(Collection<? extends Content> newContent) {
         content.clearAndSet(newContent);
         return this;
     }
@@ -776,7 +776,7 @@ public class Element extends Content implements Parent {
      * @throws IndexOutOfBoundsException if index is negative or greater
      *         than the current number of children.
      */
-    public Parent setContent(int index, Collection collection) {
+    public Parent setContent(int index, Collection<? extends Content> collection) {
         content.remove(index);
         content.addAll(index, collection);
         return this;
@@ -863,14 +863,14 @@ public class Element extends Content implements Parent {
      * @throws IllegalAddException if any item in the collection
      *         already has a parent or is of an inappropriate type.
      */
-    public Element addContent(int index, Collection c) {
+    public Element addContent(int index, Collection<? extends Content> c) {
         content.addAll(index, c);
         return this;
     }
 
-    public List cloneContent() {
+    public List<? extends Content> cloneContent() {
         int size = getContentSize();
-        List list = new ArrayList(size);
+        List<Content> list = new ArrayList<Content>(size);
         for (int i = 0; i < size; i++) {
             Content child = getContent(i);
             list.add(child.clone());
@@ -879,7 +879,7 @@ public class Element extends Content implements Parent {
     }
 
     public Content getContent(int index) {
-        return (Content) content.get(index);
+        return content.get(index);
     }
 
 //    public Content getChild(Filter filter) {
@@ -892,7 +892,7 @@ public class Element extends Content implements Parent {
     }
 
     public Content removeContent(int index) {
-        return (Content) content.remove(index);
+        return content.remove(index);
     }
 
     /**
@@ -958,7 +958,7 @@ public class Element extends Content implements Parent {
      *
      * @return attributes for the element
      */
-    public List getAttributes() {
+    public List<Attribute> getAttributes() {
         return attributes;
     }
 
@@ -1093,7 +1093,7 @@ public class Element extends Content implements Parent {
      *         or if any of the <code>Attribute</code> objects have
      *         conflicting namespace prefixes.
      */
-    public Element setAttributes(List newAttributes) {
+    public Element setAttributes(List<? extends Attribute> newAttributes) {
         attributes.clearAndSet(newAttributes);
         return this;
     }
@@ -1210,7 +1210,7 @@ public class Element extends Content implements Parent {
      *         <code>Element</code>
      */
     public String toString() {
-        StringBuffer stringForm = new StringBuffer(64)
+        StringBuilder stringForm = new StringBuilder(64)
             .append("[Element: <")
             .append(getQualifiedName());
 
@@ -1330,7 +1330,7 @@ public class Element extends Content implements Parent {
             int size = additionalNamespaces.size();
             out.write(size);
             for (int i = 0; i < size; i++) {
-                Namespace additional = (Namespace) additionalNamespaces.get(i);
+                Namespace additional = additionalNamespaces.get(i);
                 out.writeObject(additional.getPrefix());
                 out.writeObject(additional.getURI());
             }

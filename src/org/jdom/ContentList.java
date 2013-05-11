@@ -325,7 +325,7 @@ final class ContentList extends AbstractList<Content> implements java.io.Seriali
      *
      * @param collection The collection to use.
      */
-    void clearAndSet(Collection collection) {
+    void clearAndSet(Collection<? extends Content> collection) {
         Content[] old = elementData;
         int oldSize = size;
 
