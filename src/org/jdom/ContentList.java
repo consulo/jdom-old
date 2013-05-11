@@ -136,14 +136,8 @@ final class ContentList extends AbstractList<Content> implements java.io.Seriali
         if (obj == null) {
             throw new IllegalAddException("Cannot add null object");
         }
-        if ((obj instanceof Content)) {
-            addImpl(index, (Content) obj);
-        } else {
-            throw new IllegalAddException("Class " +
-                         obj.getClass().getName() +
-                         " is of unrecognized type and cannot be added");
-        }
-    }
+		addImpl(index, obj);
+	}
 
     /**
      * @see org.jdom.ContentList#addImpl(int, org.jdom.Content)
@@ -258,7 +252,7 @@ final class ContentList extends AbstractList<Content> implements java.io.Seriali
      * @return <code>true</code> if the list was modified as a result of
      *                           the add.
      */
-    public boolean addAll(Collection collection) {
+    public boolean addAll(Collection<? extends Content> collection) {
         return addAll(size(), collection);
     }
 
@@ -365,7 +359,7 @@ final class ContentList extends AbstractList<Content> implements java.io.Seriali
         } else {
             int oldCapacity = elementData.length;
             if (minCapacity > oldCapacity) {
-                Object oldData[] = elementData;
+                Content[] oldData = elementData;
                 int newCapacity = (oldCapacity * 3)/2 + 1;
                 if (newCapacity < minCapacity)
                     newCapacity = minCapacity;
@@ -691,10 +685,10 @@ final class ContentList extends AbstractList<Content> implements java.io.Seriali
          * @param index Index of in this view.
          * @return True index in backing list
          */
-        final private int getAdjustedIndex(int index) {
+        private int getAdjustedIndex(int index) {
             int adjusted = 0;
             for (int i = 0; i < ContentList.this.size; i++) {
-                Object obj = ContentList.this.elementData[i];
+                Content obj = ContentList.this.elementData[i];
                 if (filter.matches(obj)) {
                     if (index == adjusted) {
                         return i;
