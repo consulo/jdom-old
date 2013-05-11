@@ -56,6 +56,8 @@
 
 package org.jdom.filter;
 
+import org.jdom.Content;
+
 /**
  * Allow two filters to be chained together with a logical
  * <b>or</b> operation.
@@ -63,7 +65,7 @@ package org.jdom.filter;
  * @author Bradley S. Huffman
  * @version $Revision: 1.4 $, $Date: 2004/02/06 09:28:31 $
  */
-final class OrFilter extends AbstractFilter {
+final class OrFilter<E extends Content> extends AbstractFilter<E> {
 
     private static final String CVS_ID = 
       "@(#) $RCSfile: OrFilter.java,v $ $Revision: 1.4 $ $Date: 2004/02/06 09:28:31 $";

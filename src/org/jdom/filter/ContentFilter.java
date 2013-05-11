@@ -82,7 +82,7 @@ import org.jdom.*;
  * @version $Revision: 1.14 $, $Date: 2004/08/31 04:56:07 $
  * @author Bradley S. Huffman
  */
-public class ContentFilter extends AbstractFilter {
+public class ContentFilter<E extends Content> extends AbstractFilter<E> {
 
     private static final String CVS_ID =
       "@(#) $RCSfile: ContentFilter.java,v $ $Revision: 1.14 $ $Date: 2004/08/31 04:56:07 $ $Name: jdom_1_0 $";

@@ -57,6 +57,8 @@
 package org.jdom.filter;
 
 
+import org.jdom.Content;
+
 /**
  * A generalized filter to restrict visibility or mutability on a list.
  *
@@ -64,7 +66,7 @@ package org.jdom.filter;
  * @author  Jools Enticknap
  * @author  Bradley S. Huffman
  */
-public interface Filter extends java.io.Serializable {
+public interface Filter<E extends Content> extends java.io.Serializable {
     /**
      * Check to see if the object matches a predefined set of rules.
      *

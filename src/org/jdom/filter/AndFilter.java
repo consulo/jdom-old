@@ -56,6 +56,8 @@
 
 package org.jdom.filter;
 
+import org.jdom.Content;
+
 /**
  * Allow two filters to be chained together with a logical
  * <b>and</b> operation.
@@ -63,7 +65,7 @@ package org.jdom.filter;
  * @author Bradley S. Huffman
  * @version $Revision: 1.3 $, $Date: 2004/02/06 09:28:31 $
  */
-final class AndFilter extends AbstractFilter {
+final class AndFilter<E extends Content> extends AbstractFilter<E> {
 
     private static final String CVS_ID = 
       "@(#) $RCSfile: AndFilter.java,v $ $Revision: 1.3 $ $Date: 2004/02/06 09:28:31 $";

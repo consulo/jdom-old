@@ -680,8 +680,8 @@ public class Element extends Content implements Parent {
      *
      * @return list of the old children detached from this parent
      */
-    public List removeContent() {
-        List old = new ArrayList(content);
+    public List<? extends Content> removeContent() {
+        List<? extends Content> old = new ArrayList<Content>(content);
         content.clear();
         return old;
     }
@@ -848,7 +848,7 @@ public class Element extends Content implements Parent {
      * @throws IllegalAddException if the given child already has a parent.
      */
     public Element addContent(int index, Content child) {
-        content.add(index, child);
+        content.addImpl(index, child);
         return this;
     }
 
@@ -1238,7 +1238,7 @@ public class Element extends Content implements Parent {
      *
      * @return the clone of this element
      */
-    public Object clone() {
+    public Element clone() {
 
         // Ken Rune Helland <kenh@csc.no> is our local clone() guru
 
@@ -1365,7 +1365,7 @@ public class Element extends Content implements Parent {
      *
      * @return an iterator to walk descendants
      */
-    public Iterator getDescendants() {
+    public Iterator<? extends Content> getDescendants() {
         return new DescendantIterator(this);
     }
 
@@ -1378,8 +1378,8 @@ public class Element extends Content implements Parent {
      * @param filter filter to select which descendants to see
      * @return an iterator to walk descendants within a filter
      */
-    public Iterator getDescendants(Filter filter) {
-        return new FilterIterator(new DescendantIterator(this), filter);
+    public <T extends Content> Iterator<T> getDescendants(Filter<T> filter) {
+        return new FilterIterator<T>(new DescendantIterator(this), filter);
     }
 
 
@@ -1415,7 +1415,7 @@ public class Element extends Content implements Parent {
      *
      * @return list of child <code>Element</code> objects for this element
      */
-    public List getChildren() {
+    public List<Element> getChildren() {
         return content.getView(new ElementFilter());
     }
 
@@ -1435,7 +1435,7 @@ public class Element extends Content implements Parent {
      * @param name local name for the children to match
      * @return all matching child elements
      */
-    public List getChildren(String name) {
+    public List<Element> getChildren(String name) {
         return getChildren(name, Namespace.NO_NAMESPACE);
     }
 
@@ -1456,7 +1456,7 @@ public class Element extends Content implements Parent {
      * @param ns <code>Namespace</code> to search within
      * @return all matching child elements
      */
-    public List getChildren(String name, Namespace ns) {
+    public List<Element> getChildren(String name, Namespace ns) {
         return content.getView(new ElementFilter(name, ns));
     }
 
@@ -1471,7 +1471,7 @@ public class Element extends Content implements Parent {
      * @return the first matching child element, or null if not found
      */
     public Element getChild(String name, Namespace ns) {
-        List elements = content.getView(new ElementFilter(name, ns));
+        List<Element> elements = content.getView(new ElementFilter(name, ns));
         Iterator i = elements.iterator();
         if (i.hasNext()) {
             return (Element) i.next();

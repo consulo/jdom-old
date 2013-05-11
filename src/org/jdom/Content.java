@@ -155,7 +155,7 @@ public abstract class Content implements Cloneable, Serializable {
      *
      * @return a detached deep copy of this child and descendants
      */
-    public Object clone() {
+    public Content clone() {
         try {
             Content c = (Content)super.clone();
             c.parent = null;

@@ -458,7 +458,7 @@ public class ProcessingInstruction extends Content {
      * @return <code>Object</code> - clone of this
      * <code>ProcessingInstruction</code>.
      */
-    public Object clone() {
+    public Content clone() {
         ProcessingInstruction pi = (ProcessingInstruction) super.clone();
 
         // target and rawdata are immutable and references copied by

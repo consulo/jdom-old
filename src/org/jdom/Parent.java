@@ -105,7 +105,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return list of cloned child content
      */
-    List cloneContent();
+    List<? extends Content> cloneContent();
 
     /**
      * Returns the child at the given index.
@@ -135,7 +135,7 @@ public interface Parent extends Cloneable, Serializable {
      * @throws IllegalStateException if parent is a Document
      *         and the root element is not set
      */
-    List getContent();
+    List<? extends Content> getContent();
 
     /**
      * Returns as a {@link java.util.List} the content of
@@ -154,7 +154,7 @@ public interface Parent extends Cloneable, Serializable {
      * @throws IllegalStateException if parent is a Document
      *         and the root element is not set
      */
-    List getContent(Filter filter);
+    <T extends Content> List<T> getContent(Filter<T> filter);
 
     /**
      * Removes all content from this parent and returns the detached
@@ -162,7 +162,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return list of the old content detached from this parent
      */
-    List removeContent();
+    List<? extends Content> removeContent();
 
     /**
      * Removes from this parent all child content matching the given filter
@@ -171,7 +171,7 @@ public interface Parent extends Cloneable, Serializable {
      * @param  filter filter to apply
      * @return list of the detached children matching the filter
      */
-    List removeContent(Filter filter);
+    <T extends Content> List<T> removeContent(Filter<T> filter);
 
     /**
      * Removes a single child node from the content list.
@@ -197,7 +197,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return a deep copy of this parent and it's children.
      */
-    Object clone();
+	Parent clone();
 
     /**
      * Returns an {@link java.util.Iterator} that walks over all descendants
@@ -205,7 +205,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return an iterator to walk descendants
      */
-    Iterator getDescendants();
+    Iterator<? extends Content> getDescendants();
 
     /**
      * Returns an {@link java.util.Iterator} that walks over all descendants
@@ -217,7 +217,7 @@ public interface Parent extends Cloneable, Serializable {
      * @param filter filter to select which descendants to see
      * @return an iterator to walk descendants that match a filter
      */
-    Iterator getDescendants(Filter filter);
+    <T extends Content> Iterator<T> getDescendants(Filter<T> filter);
 
     /**
      * Return this parent's parent, or null if this parent is currently

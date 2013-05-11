@@ -249,11 +249,7 @@ public class Text extends Content {
      * @return <code>String</code> - information about this node.
      */
     public String toString() {
-        return new StringBuffer(64)
-            .append("[Text: ")
-            .append(getText())
-            .append("]")
-            .toString();
+        return "[Text: " + getText() + "]";
     }
 
     /**
@@ -262,7 +258,7 @@ public class Text extends Content {
      *
      * @return <code>Text</code> - cloned node.
      */
-    public Object clone() {
+    public Text clone() {
         Text text = (Text)super.clone();
         text.value = value;
         return text;

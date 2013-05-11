@@ -56,6 +56,8 @@
 
 package org.jdom.filter;
 
+import org.jdom.Content;
+
 /**
  * Filter that is the logical <b>negation</b> operation of another filter.
  *
@@ -63,7 +65,7 @@ package org.jdom.filter;
  * @author Bradley S. Huffman
  * @version $Revision: 1.3 $, $Date: 2004/02/06 09:28:31 $
  */
-final class NegateFilter extends AbstractFilter {
+final class NegateFilter<E extends Content> extends AbstractFilter<E> {
 
     private static final String CVS_ID = 
       "@(#) $RCSfile: NegateFilter.java,v $ $Revision: 1.3 $ $Date: 2004/02/06 09:28:31 $";

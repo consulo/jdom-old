@@ -299,7 +299,7 @@ public class Document implements Parent {
         // Add DocType to head if new, replace old otherwise
         int docTypeIndex = content.indexOfDocType();
         if (docTypeIndex < 0) {
-            content.add(0, docType);
+            content.addImpl(0, docType);
         }
         else {
             content.set(docTypeIndex, docType);
@@ -347,7 +347,7 @@ public class Document implements Parent {
      * @throws IllegalAddException if the given child already has a parent.
      */
     public Document addContent(int index, Content child) {
-        content.add(index, child);
+        content.addImpl(index, child);
         return this;
     }
 
@@ -370,9 +370,9 @@ public class Document implements Parent {
         return this;
     }
 
-    public List cloneContent() {
+    public List<Content> cloneContent() {
         int size = getContentSize();
-        List list = new ArrayList(size);
+        List<Content> list = new ArrayList<Content>(size);
         for (int i = 0; i < size; i++) {
             Content child = getContent(i);
             list.add(child.clone());
@@ -380,8 +380,9 @@ public class Document implements Parent {
         return list;
     }
 
+	@Override
     public Content getContent(int index) {
-        return (Content) content.get(index);
+        return content.get(index);
     }
 
 //    public Content getChild(Filter filter) {
@@ -422,7 +423,7 @@ public class Document implements Parent {
      * @return <code>List</code> - filtered Document content
      * @throws IllegalStateException if the root element hasn't been set
      */
-    public List getContent(Filter filter) {
+    public <T extends Content> List<T> getContent(Filter<T> filter) {
         if (!hasRootElement())
             throw new IllegalStateException("Root element not set");
         return content.getView(filter);
@@ -433,8 +434,8 @@ public class Document implements Parent {
      *
      * @return list of the old children detached from this parent
      */
-    public List removeContent() {
-        List old = new ArrayList(content);
+    public List<? extends Content> removeContent() {
+        List<Content> old = new ArrayList<Content>(content);
         content.clear();
         return old;
     }
@@ -445,11 +446,11 @@ public class Document implements Parent {
      * @param filter filter to select which content to remove
      * @return list of the old children detached from this parent
      */
-    public List removeContent(Filter filter) {
-        List old = new ArrayList();
-        Iterator itr = content.getView(filter).iterator();
+    public <T extends Content> List<T> removeContent(Filter<T> filter) {
+        List<T> old = new ArrayList<T>();
+        Iterator<T> itr = content.getView(filter).iterator();
         while (itr.hasNext()) {
-            Content child = (Content) itr.next();
+            T child = itr.next();
             old.add(child);
             itr.remove();
         }
@@ -663,7 +664,7 @@ public class Document implements Parent {
      *
      * @return <code>Object</code> clone of this <code>Document</code>
      */
-    public Object clone() {
+    public Document clone() {
         Document doc = null;
 
         try {

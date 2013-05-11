@@ -77,7 +77,7 @@ import org.jdom.filter.*;
  * @author  Philippe Riand
  * @author  Bradley S. Huffman
  */
-final class ContentList extends AbstractList implements java.io.Serializable {
+final class ContentList extends AbstractList<Content> implements java.io.Serializable {
 
     private static final String CVS_ID =
       "@(#) $RCSfile: ContentList.java,v $ $Revision: 1.39 $ $Date: 2004/02/28 03:30:27 $ $Name: jdom_1_0 $";
@@ -98,8 +98,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
     private static final int REMOVE  = 6;
 
     /** Our backing list */
-//    protected ArrayList list;
-    private Content elementData[];
+    private Content[] elementData;
     private int size;
 
     /** Document or Element this list belongs to */
@@ -132,12 +131,13 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @param obj The object to insert into the list.
      * throws IndexOutOfBoundsException if index < 0 || index > size()
      */
-    public void add(int index, Object obj) {
+	@Override
+    public void add(int index, Content obj) {
         if (obj == null) {
             throw new IllegalAddException("Cannot add null object");
         }
         if ((obj instanceof Content)) {
-            add(index, (Content) obj);
+            addImpl(index, (Content) obj);
         } else {
             throw new IllegalAddException("Class " +
                          obj.getClass().getName() +
@@ -146,7 +146,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
     }
 
     /**
-     * @see org.jdom.ContentList#add(int, org.jdom.Content)
+     * @see org.jdom.ContentList#addImpl(int, org.jdom.Content)
      */
     private void documentCanContain(int index, Content child) throws IllegalAddException {
         if (child instanceof Element) {
@@ -197,7 +197,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @param index index where to add <code>Element</code>
      * @param child <code>Element</code> to add
      */
-    void add(int index, Content child) {
+    void addImpl(int index, Content child) {
         if (child == null) {
             throw new IllegalAddException("Cannot add null object");
         }
@@ -273,7 +273,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      *                           the add.
      * throws IndexOutOfBoundsException if index < 0 || index > size()
      */
-    public boolean addAll(int index, Collection collection) {
+    public boolean addAll(int index, Collection<? extends Content> collection) {
         if (index<0 || index>size) {
             throw new IndexOutOfBoundsException("Index: " + index +
                                                 " Size: " + size());
@@ -286,9 +286,9 @@ final class ContentList extends AbstractList implements java.io.Serializable {
 
         int count = 0;
         try {
-            Iterator i = collection.iterator();
+            Iterator<? extends Content> i = collection.iterator();
             while (i.hasNext()) {
-                Object obj = i.next();
+				Content obj = i.next();
                 add(index + count, obj);
                 count++;
             }
@@ -381,7 +381,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @param index The offset of the object.
      * @return The Object which was returned.
      */
-    public Object get(int index) {
+    public Content get(int index) {
         if (index<0 || index>=size) {
             throw new IndexOutOfBoundsException("Index: " + index +
                                                 " Size: " + size());
@@ -395,8 +395,8 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @param filter <code>Filter</code> for this view.
      * @return a list representing the rules of the <code>Filter</code>.
      */
-    List getView(Filter filter) {
-        return new FilterList(filter);
+    <T extends Content> List<T> getView(Filter<T> filter) {
+        return new FilterList<T>(filter);
     }
 
     /**
@@ -441,7 +441,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @param index The offset of the object.
      * @return The Object which was removed.
      */
-    public Object remove(int index) {
+    public Content remove(int index) {
         if (index<0 || index>=size)
             throw new IndexOutOfBoundsException("Index: " + index +
                                                  " Size: " + size());
@@ -471,7 +471,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * @return The object which was replaced.
      * throws IndexOutOfBoundsException if index < 0 || index >= size()
      */
-    public Object set(int index, Object obj) {
+    public Content set(int index, Content obj) {
         if (index<0 || index>=size)
             throw new IndexOutOfBoundsException("Index: " + index +
                                                  " Size: " + size());
@@ -492,7 +492,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
             }
         }
 
-        Object old = remove(index);
+		Content old = remove(index);
         try {
             add(index, obj);
         }
@@ -534,10 +534,10 @@ final class ContentList extends AbstractList implements java.io.Serializable {
      * for <code>Document</code>s or <code>Element</code>s.
      */
 
-    class FilterList extends AbstractList implements java.io.Serializable {
+    class FilterList<E extends Content> extends AbstractList<E> implements java.io.Serializable {
 
         /** The Filter */
-        Filter filter;
+        Filter<E> filter;
 
         /** Current number of items in this view */
         int count = 0;
@@ -555,7 +555,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
         /**
          * Create a new instance of the FilterList with the specified Filter.
          */
-        FilterList(Filter filter) {
+        FilterList(Filter<E> filter) {
             this.filter = filter;
         }
 
@@ -568,7 +568,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
          * @param obj The object to insert into the list.
          * throws IndexOutOfBoundsException if index < 0 || index > size()
          */
-        public void add(int index, Object obj) {
+        public void add(int index, E obj) {
             if (filter.matches(obj)) {
                 int adjusted = getAdjustedIndex(index);
                 ContentList.this.add(adjusted, obj);
@@ -586,21 +586,21 @@ final class ContentList extends AbstractList implements java.io.Serializable {
          * @param index The offset of the object.
          * @return The Object which was returned.
          */
-        public Object get(int index) {
+        public E get(int index) {
             int adjusted = getAdjustedIndex(index);
-            return ContentList.this.get(adjusted);
+            return (E)ContentList.this.get(adjusted);
         }
 
-        public Iterator iterator() {
-            return new FilterListIterator(filter, 0);
+        public Iterator<E> iterator() {
+            return new FilterListIterator<E>(filter, 0);
         }
 
-        public ListIterator listIterator() {
-            return new FilterListIterator(filter, 0);
+        public ListIterator<E> listIterator() {
+            return new FilterListIterator<E>(filter, 0);
         }
 
-        public ListIterator listIterator(int index) {
-            return new FilterListIterator(filter,  index);
+        public ListIterator<E> listIterator(int index) {
+            return new FilterListIterator<E>(filter,  index);
         }
 
         /**
@@ -609,7 +609,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
          * @param index The offset of the object.
          * @return The Object which was removed.
          */
-        public Object remove(int index) {
+        public E remove(int index) {
             int adjusted = getAdjustedIndex(index);
             Object old = ContentList.this.get(adjusted);
             if (filter.matches(old)) {
@@ -623,7 +623,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
                                              " '" + old + "' (index " + index +
                                              ") to be removed");
             }
-            return old;
+            return (E)old;
         }
 
         /**
@@ -635,8 +635,8 @@ final class ContentList extends AbstractList implements java.io.Serializable {
          * @return The object which was replaced.
          * throws IndexOutOfBoundsException if index < 0 || index >= size()
          */
-        public Object set(int index, Object obj) {
-            Object old = null;
+        public E set(int index, Content obj) {
+			Content old = null;
             if (filter.matches(obj)) {
                 int adjusted = getAdjustedIndex(index);
                 old = ContentList.this.get(adjusted);
@@ -654,7 +654,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
                                               index + " to be set to " +
                                               (obj.getClass()).getName());
             }
-            return old;
+            return (E) old;
         }
 
         /**
@@ -714,10 +714,10 @@ final class ContentList extends AbstractList implements java.io.Serializable {
     /* * * * * * * * * * * * * FilterListIterator * * * * * * * * * * * */
     /* * * * * * * * * * * * * FilterListIterator * * * * * * * * * * * */
 
-    class FilterListIterator implements ListIterator {
+    class FilterListIterator<E extends Content> implements ListIterator<E> {
 
         /** The Filter that applies */
-        Filter filter;
+        Filter<E> filter;
 
         /** The last operation performed */
         int lastOperation;
@@ -737,7 +737,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
         /**
          * Default constructor
          */
-        FilterListIterator(Filter filter, int start) {
+        FilterListIterator(Filter<E> filter, int start) {
             this.filter = filter;
             initialCursor = initializeCursor(start);
             last = -1;
@@ -771,13 +771,13 @@ final class ContentList extends AbstractList implements java.io.Serializable {
                 lastOperation = HASNEXT;
             }
 
-            return (cursor < ContentList.this.size()) ? true : false;
+            return cursor < ContentList.this.size();
         }
 
         /**
          * Returns the next element in the list.
          */
-        public Object next() {
+        public E next() {
             checkConcurrentModification();
 
             if (hasNext()) {
@@ -789,7 +789,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
             }
 
             lastOperation = NEXT;
-            return ContentList.this.get(last);
+            return (E)ContentList.this.get(last);
         }
 
         /**
@@ -822,13 +822,13 @@ final class ContentList extends AbstractList implements java.io.Serializable {
                 lastOperation = HASPREV;
             }
 
-            return (cursor < 0) ? false : true;
+            return cursor >= 0;
         }
 
         /**
          * Returns the previous element in the list.
          */
-        public Object previous() {
+        public E previous() {
             checkConcurrentModification();
 
             if (hasPrevious()) {
@@ -840,7 +840,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
             }
 
             lastOperation = PREV;
-            return ContentList.this.get(last);
+            return (E)ContentList.this.get(last);
         }
 
         /**
@@ -889,7 +889,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
         /**
          * Inserts the specified element into the list.
          */
-        public void add(Object obj) {
+        public void add(Content obj) {
             checkConcurrentModification();
 
             if (filter.matches(obj)) {
@@ -938,7 +938,7 @@ final class ContentList extends AbstractList implements java.io.Serializable {
          * Replaces the last element returned by <code>next</code> or
          * <code>previous</code> with the specified element.
          */
-        public void set(Object obj) {
+        public void set(Content obj) {
             checkConcurrentModification();
 
             if ((lastOperation == ADD) || (lastOperation == REMOVE)) {

@@ -56,10 +56,10 @@
 
 package org.jdom;
 
-import java.util.*;
-import org.jdom.Content;
-import org.jdom.Element;
-import org.jdom.Parent;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Traverse all a parent's descendants (all children at any level below
@@ -69,11 +69,11 @@ import org.jdom.Parent;
  * @author Jason Hunter
  * @version $Revision: 1.5 $, $Date: 2004/02/27 11:32:57 $
  */
-class DescendantIterator implements Iterator {
+class DescendantIterator implements Iterator<Content> {
 
-    private Iterator iterator;
-    private Iterator nextIterator;
-    private List stack = new ArrayList();
+    private Iterator<? extends Content> iterator;
+    private Iterator<? extends Content> nextIterator;
+    private List<Iterator<? extends Content>> stack = new ArrayList<Iterator<? extends Content>>();
 
     private static final String CVS_ID =
             "@(#) $RCSfile: DescendantIterator.java,v $ $Revision: 1.5 $ $Date: 2004/02/27 11:32:57 $ $Name: jdom_1_0 $";
@@ -107,7 +107,8 @@ class DescendantIterator implements Iterator {
      *
      * @return the next descendant
      */
-    public Object next() {
+	@Override
+    public Content next() {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
@@ -144,26 +145,27 @@ class DescendantIterator implements Iterator {
      * iteration and all children, siblings, and any node following the
      * removed node (in document order) will be visited.
      */
+	@Override
     public void remove() {
         iterator.remove();
     }
 
-    private Iterator pop() {
+    private Iterator<? extends Content> pop() {
         int stackSize = stack.size();
         if (stackSize == 0) {
             throw new NoSuchElementException("empty stack");
         }
-        return (Iterator) stack.remove(stackSize - 1);
+        return stack.remove(stackSize - 1);
     }
 
-    private void push(Iterator itr) {
+    private void push(Iterator<? extends Content> itr) {
         stack.add(itr);
     }
 
     private boolean stackHasAnyNext() {
         int size = stack.size();
         for (int i = 0; i < size; i++) {
-            Iterator itr = (Iterator) stack.get(i);
+            Iterator<? extends Content> itr = stack.get(i);
             if (itr.hasNext()) {
                 return true;
             }

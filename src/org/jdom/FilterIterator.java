@@ -65,16 +65,16 @@ import org.jdom.filter.*;
  * @author Bradley S. Huffman
  * @version $Revision: 1.5 $, $Date: 2004/08/31 19:36:12 $
  */
-class FilterIterator implements Iterator {
+class FilterIterator<E extends Content> implements Iterator<E> {
 
-    private Iterator iterator;
-    private Filter filter;
-    private Object nextObject;
+    private Iterator<? extends Content> iterator;
+    private Filter<E> filter;
+    private E nextObject;
 
     private static final String CVS_ID =
             "@(#) $RCSfile: FilterIterator.java,v $ $Revision: 1.5 $ $Date: 2004/08/31 19:36:12 $ $Name: jdom_1_0 $";
 
-    public FilterIterator(Iterator iterator, Filter filter) {
+    public FilterIterator(Iterator<? extends Content> iterator, Filter<E> filter) {
         if ((iterator == null) || (filter == null)) {
             throw new IllegalArgumentException("null parameter");
         }
@@ -88,21 +88,21 @@ class FilterIterator implements Iterator {
         }
 
         while (iterator.hasNext()) {
-            Object obj = iterator.next();
+            Content obj = iterator.next();
             if (filter.matches(obj)) {
-                nextObject = obj;
+                nextObject = (E) obj;
                 return true;
             }
         }
         return false;
     }
 
-    public Object next() {
+    public E next() {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
-        Object obj = nextObject;
+        E obj = nextObject;
         nextObject = null;
         return obj;
     }

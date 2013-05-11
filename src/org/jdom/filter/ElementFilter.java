@@ -66,7 +66,7 @@ import org.jdom.*;
  * @author  Jools Enticknap
  * @author  Bradley S. Huffman
  */
-public class ElementFilter extends AbstractFilter {
+public class ElementFilter extends AbstractFilter<Element> {
 
     private static final String CVS_ID =
       "@(#) $RCSfile: ElementFilter.java,v $ $Revision: 1.18 $ $Date: 2004/09/07 06:37:20 $ $Name: jdom_1_0 $";

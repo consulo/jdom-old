@@ -56,13 +56,15 @@
 
 package org.jdom.filter;
 
+import org.jdom.Content;
+
 /**
  * Partial implementation of {@link Filter}.
  *
  * @author Bradley S. Huffman
  * @version $Revision: 1.5 $, $Date: 2004/02/27 11:32:58 $
  */
-public abstract class AbstractFilter implements Filter {
+public abstract class AbstractFilter<E extends Content> implements Filter<E> {
 
     private static final String CVS_ID = 
       "@(#) $RCSfile: AbstractFilter.java,v $ $Revision: 1.5 $ $Date: 2004/02/27 11:32:58 $";
