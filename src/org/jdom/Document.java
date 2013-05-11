@@ -708,7 +708,7 @@ public class Document implements Parent {
      *
      * @return an iterator to walk descendants
      */
-    public Iterator getDescendants() {
+    public Iterator<? extends Content> getDescendants() {
         return new DescendantIterator(this);
     }
 
@@ -721,8 +721,8 @@ public class Document implements Parent {
      * @param filter filter to select which descendants to see
      * @return an iterator to walk descendants within a filter
      */
-    public Iterator getDescendants(Filter filter) {
-        return new FilterIterator(new DescendantIterator(this), filter);
+    public  <T extends Content> Iterator<T> getDescendants(Filter<T> filter) {
+        return new FilterIterator<T>(new DescendantIterator(this), filter);
     }
 
     public Parent getParent() {

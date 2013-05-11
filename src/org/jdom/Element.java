@@ -93,7 +93,7 @@ public class Element extends Content implements Parent {
 
     /** Additional namespace declarations to store on this element; useful
      * during output */
-    protected transient List additionalNamespaces;
+    protected transient List<Namespace> additionalNamespaces;
 
     // See http://lists.denveronline.net/lists/jdom-interest/2000-September/003030.html
     // for a possible memory optimization here (using a RootElement subclass)
@@ -284,7 +284,7 @@ public class Element extends Content implements Parent {
         // Scan the additional namespaces
         if (additionalNamespaces != null) {
             for (int i = 0; i < additionalNamespaces.size(); i++) {
-                Namespace ns = (Namespace) additionalNamespaces.get(i);
+                Namespace ns = additionalNamespaces.get(i);
                 if (prefix.equals(ns.getPrefix())) {
                     return ns;
                 }
@@ -314,10 +314,7 @@ public class Element extends Content implements Parent {
             return getName();
         }
 
-        return new StringBuffer(namespace.getPrefix())
-            .append(':')
-            .append(name)
-            .toString();
+        return namespace.getPrefix() + ':' + name;
     }
 
     /**
@@ -342,7 +339,7 @@ public class Element extends Content implements Parent {
         }
 
         if (additionalNamespaces == null) {
-            additionalNamespaces = new ArrayList(INITIAL_ARRAY_SIZE);
+            additionalNamespaces = new ArrayList<Namespace>(INITIAL_ARRAY_SIZE);
         }
 
         additionalNamespaces.add(additional);
@@ -394,7 +391,7 @@ public class Element extends Content implements Parent {
      * @return a concatentation of all text node descendants
      */
     public String getValue() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
 
         Iterator itr = getContent().iterator();
         while (itr.hasNext()) {
@@ -463,7 +460,7 @@ public class Element extends Content implements Parent {
         }
 
         // Else build String up
-        StringBuffer textContent = new StringBuffer();
+        StringBuilder textContent = new StringBuilder();
         boolean hasText = false;
 
         for (int i = 0; i < content.size(); i++) {
@@ -1271,9 +1268,9 @@ public class Element extends Content implements Parent {
         // Cloning additional namespaces
         if (additionalNamespaces != null) {
             int additionalSize = additionalNamespaces.size();
-            element.additionalNamespaces = new ArrayList(additionalSize);
+            element.additionalNamespaces = new ArrayList<Namespace>(additionalSize);
             for (int i = 0; i < additionalSize; i++) {
-                Object additional = additionalNamespaces.get(i);
+				Namespace additional = additionalNamespaces.get(i);
                 element.additionalNamespaces.add(additional);
             }
         }
@@ -1283,13 +1280,13 @@ public class Element extends Content implements Parent {
             for (int i = 0; i < content.size(); i++) {
                 Object obj = content.get(i);
                 if (obj instanceof Element) {
-                    Element elt = (Element)((Element)obj).clone();
+                    Element elt = ((Element)obj).clone();
                     element.content.add(elt);
                 }  else if (obj instanceof CDATA) {
                     CDATA cdata = (CDATA)((CDATA)obj).clone();
                     element.content.add(cdata);
                 } else if (obj instanceof Text) {
-                    Text text = (Text)((Text)obj).clone();
+                    Text text = ((Text)obj).clone();
                     element.content.add(text);
                 } else if (obj instanceof Comment) {
                     Comment comment = (Comment)((Comment)obj).clone();
@@ -1308,7 +1305,7 @@ public class Element extends Content implements Parent {
         // Handle additional namespaces
         if (additionalNamespaces != null) {
             // Avoid additionalNamespaces.clone() because List isn't Cloneable
-            element.additionalNamespaces = new ArrayList();
+            element.additionalNamespaces = new ArrayList<Namespace>();
             element.additionalNamespaces.addAll(additionalNamespaces);
         }
 
@@ -1351,7 +1348,7 @@ public class Element extends Content implements Parent {
         int size = in.read();
 
         if (size != 0) {
-            additionalNamespaces = new ArrayList(size);
+            additionalNamespaces = new ArrayList<Namespace>(size);
             for (int i = 0; i < size; i++) {
                 Namespace additional = Namespace.getNamespace(
                     (String)in.readObject(), (String)in.readObject());
