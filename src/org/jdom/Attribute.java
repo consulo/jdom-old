@@ -560,7 +560,7 @@ public class Attribute implements Serializable, Cloneable {
      *
      * @return <code>Object</code> - clone of this <code>Attribute</code>.
      */
-    public Object clone() {
+    public Attribute clone() {
         Attribute attribute = null;
 
         try {
