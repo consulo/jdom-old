@@ -1,5 +1,6 @@
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.Text;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -17,7 +18,7 @@ public class IterationTest extends Assert
 		assertEquals(document.getRootElement().getName(), "element");
 		for(Element element : document.getRootElement().getChildren())
 		{
-			System.out.println(element.getName());
+			assertEquals(element.getName(), "child-element");
 		}
 	}
 
@@ -26,6 +27,9 @@ public class IterationTest extends Assert
 		Document document = new Document();
 		final Element element = new Element("element");
 		element.setAttribute("key", "value");
+		element.addContent(new Element("child-element"));
+		element.addContent(new Text("inner text"));
+
 		document.addContent(element);
 		return document;
 	}
