@@ -91,7 +91,7 @@ public final class Namespace {
      * Keys are <i>prefix</i>&amp;<i>URI</i>. 
      * Values are Namespace objects 
      */
-    private static HashMap namespaces;
+    private static Map<String, Namespace> namespaces;
 
     /** Define a <code>Namespace</code> for when <i>not</i> in a namespace */
     public static final Namespace NO_NAMESPACE = new Namespace("", "");
@@ -111,7 +111,7 @@ public final class Namespace {
      * It sets up storage and required initial values.
      */
     static {
-        namespaces = new HashMap();
+        namespaces = new HashMap<String, Namespace>();
 
         // Add the "empty" namespace
         namespaces.put("&", NO_NAMESPACE);
@@ -143,9 +143,8 @@ public final class Namespace {
         // should all be legal. In other words, an illegal namespace won't
         // have been placed in this.  Thus we can do this test before
         // verifying the URI and prefix.
-        String lookup = new StringBuffer(64)
-            .append(prefix).append('&').append(uri).toString();
-        Namespace preexisting = (Namespace) namespaces.get(lookup);
+        String lookup = prefix + '&' + uri;
+        Namespace preexisting = namespaces.get(lookup);
         if (preexisting != null) {
             return preexisting;
         }
