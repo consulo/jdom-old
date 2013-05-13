@@ -652,7 +652,7 @@ public class Element extends Content implements Parent {
      *         <code>{@link CDATA}</code>, and
      *         <code>{@link EntityRef}</code> objects.
      */
-    public List<? extends Content> getContent() {
+    public List<Content> getContent() {
         return content;
     }
 
@@ -677,8 +677,8 @@ public class Element extends Content implements Parent {
      *
      * @return list of the old children detached from this parent
      */
-    public List<? extends Content> removeContent() {
-        List<? extends Content> old = new ArrayList<Content>(content);
+    public List<Content> removeContent() {
+        List<Content> old = new ArrayList<Content>(content);
         content.clear();
         return old;
     }
@@ -868,7 +868,7 @@ public class Element extends Content implements Parent {
         return this;
     }
 
-    public List<? extends Content> cloneContent() {
+    public List<Content> cloneContent() {
         int size = getContentSize();
         List<Content> list = new ArrayList<Content>(size);
         for (int i = 0; i < size; i++) {
@@ -1362,7 +1362,7 @@ public class Element extends Content implements Parent {
      *
      * @return an iterator to walk descendants
      */
-    public Iterator<? extends Content> getDescendants() {
+    public Iterator<Content> getDescendants() {
         return new DescendantIterator(this);
     }
 

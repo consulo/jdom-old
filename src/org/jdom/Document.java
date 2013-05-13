@@ -165,7 +165,7 @@ public class Document implements Parent {
      * @throws IllegalAddException if the List contains more than
      *         one Element or objects of illegal types.
      */
-    public Document(List content) {
+    public Document(Collection<? extends Content> content) {
         setContent(content);
     }
 
@@ -404,7 +404,7 @@ public class Document implements Parent {
      * @return <code>List</code> - all Document content
      * @throws IllegalStateException if the root element hasn't been set
      */
-    public List<? extends Content> getContent() {
+    public List<Content> getContent() {
         if (!hasRootElement())
             throw new IllegalStateException("Root element not set");
         return content;
@@ -434,7 +434,7 @@ public class Document implements Parent {
      *
      * @return list of the old children detached from this parent
      */
-    public List<? extends Content> removeContent() {
+    public List<Content> removeContent() {
         List<Content> old = new ArrayList<Content>(content);
         content.clear();
         return old;
@@ -556,7 +556,7 @@ public class Document implements Parent {
      * @throws IndexOutOfBoundsException if index is negative or greater
      *         than the current number of children.
      */
-    public Document setContent(int index, Collection collection) {
+    public Document setContent(int index, Collection<? extends Content> collection) {
         content.remove(index);
         content.addAll(index, collection);
         return this;
@@ -567,7 +567,7 @@ public class Document implements Parent {
     }
 
     public Content removeContent(int index) {
-        return (Content) content.remove(index);
+        return content.remove(index);
     }
 
     /**
@@ -708,7 +708,7 @@ public class Document implements Parent {
      *
      * @return an iterator to walk descendants
      */
-    public Iterator<? extends Content> getDescendants() {
+    public Iterator<Content> getDescendants() {
         return new DescendantIterator(this);
     }
 

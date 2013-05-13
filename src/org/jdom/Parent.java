@@ -105,7 +105,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return list of cloned child content
      */
-    List<? extends Content> cloneContent();
+    List<Content> cloneContent();
 
     /**
      * Returns the child at the given index.
@@ -135,7 +135,7 @@ public interface Parent extends Cloneable, Serializable {
      * @throws IllegalStateException if parent is a Document
      *         and the root element is not set
      */
-    List<? extends Content> getContent();
+    List<Content> getContent();
 
     /**
      * Returns as a {@link java.util.List} the content of
@@ -162,7 +162,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return list of the old content detached from this parent
      */
-    List<? extends Content> removeContent();
+    List<Content> removeContent();
 
     /**
      * Removes from this parent all child content matching the given filter
@@ -205,7 +205,7 @@ public interface Parent extends Cloneable, Serializable {
      *
      * @return an iterator to walk descendants
      */
-    Iterator<? extends Content> getDescendants();
+    Iterator<Content> getDescendants();
 
     /**
      * Returns an {@link java.util.Iterator} that walks over all descendants
