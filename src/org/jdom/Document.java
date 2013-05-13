@@ -404,7 +404,7 @@ public class Document implements Parent {
      * @return <code>List</code> - all Document content
      * @throws IllegalStateException if the root element hasn't been set
      */
-    public List getContent() {
+    public List<? extends Content> getContent() {
         if (!hasRootElement())
             throw new IllegalStateException("Root element not set");
         return content;
@@ -491,7 +491,7 @@ public class Document implements Parent {
      * @throws IllegalAddException if the List contains objects of
      *         illegal types or with existing parentage.
      */
-    public Document setContent(Collection newContent) {
+    public Document setContent(Collection<? extends Content> newContent) {
         content.clearAndSet(newContent);
         return this;
     }
