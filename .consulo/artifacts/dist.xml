@@ -6,7 +6,7 @@
         <element id="module-output" name="jdom" />
       </element>
       <element id="zip-archive" name="jdom-sources.jar">
-        <element id="dir-copy" path="$PROJECT_DIR$/jdom/src" />
+        <element id="dir-copy" path="$PROJECT_DIR$/src" />
       </element>
     </root>
   </artifact>
