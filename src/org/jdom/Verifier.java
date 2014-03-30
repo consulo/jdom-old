@@ -1,8 +1,8 @@
 /*-- 
 
- $Id: Verifier.java,v 1.51 2004/08/31 21:58:55 jhunter Exp $
+ $Id: Verifier.java,v 1.57 2009/07/23 05:54:23 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -62,7 +62,7 @@ import java.util.*;
  * A utility class to handle well-formedness checks on names, data, and other
  * verification tasks for JDOM. The class is final and may not be subclassed.
  *
- * @version $Revision: 1.51 $, $Date: 2004/08/31 21:58:55 $
+ * @version $Revision: 1.57 $, $Date: 2009/07/23 05:54:23 $
  * @author  Brett McLaughlin
  * @author  Elliotte Rusty Harold
  * @author  Jason Hunter
@@ -71,7 +71,7 @@ import java.util.*;
 final public class Verifier {
 
     private static final String CVS_ID = 
-      "@(#) $RCSfile: Verifier.java,v $ $Revision: 1.51 $ $Date: 2004/08/31 21:58:55 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: Verifier.java,v $ $Revision: 1.57 $ $Date: 2009/07/23 05:54:23 $ $Name:  $";
 
     /**
      * Ensure instantation cannot occur.
@@ -161,17 +161,17 @@ final public class Verifier {
             int ch = text.charAt(i);
             
             // Check if high part of a surrogate pair
-            if (ch >= 0xD800 && ch <= 0xDBFF) {
+            if (isHighSurrogate((char) ch)) {
                 // Check if next char is the low-surrogate
                 i++;
                 if (i < len) {
                     char low = text.charAt(i);
-                    if (low < 0xDC00 || low > 0xDFFF) {
+                    if (!isLowSurrogate(low)) {
                         return "Illegal Surrogate Pair";
                     }
                     // It's a good pair, calculate the true value of
                     // the character to then fall thru to isXMLCharacter
-                    ch = 0x10000 + (ch - 0xD800) * 0x400 + (low - 0xDC00);
+                    ch = decodeSurrogatePair((char) ch, low);
                 }
                 else {
                     return "Surrogate Pair Truncated";
@@ -386,10 +386,13 @@ final public class Verifier {
      */
     public static String checkNamespaceCollision(Namespace namespace,
                                                  Attribute attribute) {
-        String reason = checkNamespaceCollision(namespace,
+        String reason = null;
+        if (!attribute.getNamespace().equals(Namespace.NO_NAMESPACE)) {
+            reason = checkNamespaceCollision(namespace,
                                                 attribute.getNamespace());
-        if (reason != null) {
-            reason += " with an attribute namespace prefix on the element";
+            if (reason != null) {
+                reason += " with an attribute namespace prefix on the element";
+            }
         }
         return reason;
     }
@@ -505,15 +508,22 @@ final public class Verifier {
         if (data.indexOf("--") != -1) {
             return "Comments cannot contain double hyphens (--)";
         }
-        if (data.startsWith("-")) {
-            return "Comment data cannot start with a hyphen.";
-        }
         if (data.endsWith("-")) {
             return "Comment data cannot end with a hyphen.";
         }
 
         // If we got here, everything is OK
         return null;
+    }
+    /**
+     * This is a utility function to decode a non-BMP 
+     * UTF-16 surrogate pair.
+     * @param high high 16 bits
+     * @param low low 16 bits
+     * @return decoded character
+     */
+    public static int decodeSurrogatePair(char high, char low) {
+    	return 0x10000 + (high - 0xD800) * 0x400 + (low - 0xDC00);
     }
 
     // [13] PubidChar ::= #x20 | #xD | #xA | [a-zA-Z0-9] |
@@ -671,10 +681,9 @@ final public class Verifier {
 
    /**
      * <p>
-     * <p>
      * This is a utility function for determining whether a specified
      * Unicode character is a hexadecimal digit as defined in RFC 2396;
-     * that is, one of the ASCII characters 0-9, a-f, or A-F
+     * that is, one of the ASCII characters 0-9, a-f, or A-F.
      * </p>
      *
      * @param c  to check for hex digit.
@@ -692,6 +701,28 @@ final public class Verifier {
         if (c >= 'a' && c <= 'f') return true;
 
         return false;
+    }
+    
+    /**
+     * This is a function for determining whether the
+     * specified character is the high 16 bits in a 
+     * UTF-16 surrogate pair.
+     * @param ch character to check
+     * @return true if the character is a high surrogate, false otherwise
+     */
+    public static boolean isHighSurrogate(char ch) {
+    	return (ch >= 0xD800 && ch <= 0xDBFF);
+    }
+    
+    /**
+     * This is a function for determining whether the 
+     * specified character is the low 16 bits in a 
+     * UTF-16 surrogate pair.
+     * @param ch character to check
+     * @return true if the character is a low surrogate, false otherwise.
+     */
+    public static boolean isLowSurrogate(char ch) {
+    	return (ch >= 0xDC00 && ch <= 0xDFFF);
     }
 
     /**
@@ -1223,4 +1254,18 @@ final public class Verifier {
         return false;
     }  
     
+    /**
+     * This is a utility function for determining whether a specified 
+     * Unicode character is a whitespace character according to production 3
+     * of the XML 1.0 specification.
+     *
+     * @param c <code>char</code> to check for XML whitespace compliance
+     * @return <code>boolean</code> true if it's a whitespace, false otherwise
+     */
+    public static boolean isXMLWhitespace(char c) {
+        if (c==' ' || c=='\n' || c=='\t' || c=='\r' ){
+            return true;
+        }
+        return false;
+    }
 }

@@ -1,8 +1,8 @@
 /*--
 
- $Id: XSLTransformer.java,v 1.2 2004/02/06 09:28:32 jhunter Exp $
+ $Id: XSLTransformer.java,v 1.5 2007/11/14 04:36:54 jhunter Exp $
 
- Copyright (C) 2001-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2001-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -61,6 +61,7 @@ import java.io.*;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamSource;
 import org.jdom.*;
+import org.xml.sax.EntityResolver;
 
 /**
  * A convenience class to handle simple transformations. The JAXP TrAX classes
@@ -109,16 +110,22 @@ import org.jdom.*;
  *       Xalan 2.2d10. </li>
  *    </ol>
 
- * @version $Revision: 1.2 $, $Date: 2004/02/06 09:28:32 $
+ * @version $Revision: 1.5 $, $Date: 2007/11/14 04:36:54 $
  * @author  Jason Hunter
  * @author  Elliotte Rusty Harold
  */
 public class XSLTransformer {
 
     private static final String CVS_ID =
-            "@(#) $RCSfile: XSLTransformer.java,v $ $Revision: 1.2 $ $Date: 2004/02/06 09:28:32 $ $Name: jdom_1_0 $";
+            "@(#) $RCSfile: XSLTransformer.java,v $ $Revision: 1.5 $ $Date: 2007/11/14 04:36:54 $ $Name:  $";
 
     private Templates templates;
+
+    /**
+     * The custom JDOM factory to use when building the transformation
+     * result or <code>null</code> to use the default JDOM classes.
+     */
+    private JDOMFactory factory = null;
 
     // Internal constructor to support the other constructors
     private XSLTransformer(Source stylesheet) throws XSLTransformException {
@@ -211,6 +218,7 @@ public class XSLTransformer {
     public List transform(List inputNodes) throws XSLTransformException {
         JDOMSource source = new JDOMSource(inputNodes);
         JDOMResult result = new JDOMResult();
+        result.setFactory(factory);  // null ok
         try {
             templates.newTransformer().transform(source, result);
             return result.getResult();
@@ -219,7 +227,7 @@ public class XSLTransformer {
             throw new XSLTransformException("Could not perform transformation", e);
         }
     }
-
+    
     /**
      * Transforms the given document to an output document.
      *
@@ -228,8 +236,21 @@ public class XSLTransformer {
      * @throws XSLTransformException       if there's a problem in the transformation
      */
     public Document transform(Document inputDoc) throws XSLTransformException {
-        JDOMSource source = new JDOMSource(inputDoc);
+    	return transform(inputDoc, null);
+    }
+
+    /**
+     * Transforms the given document to an output document.
+     *
+     * @param  inputDoc            input document
+     * @param  resolver			   entity resolver for the input document
+     * @return                     transformed output document
+     * @throws XSLTransformException       if there's a problem in the transformation
+     */
+    public Document transform(Document inputDoc, EntityResolver resolver) throws XSLTransformException {
+        JDOMSource source = new JDOMSource(inputDoc, resolver);
         JDOMResult result = new JDOMResult();
+        result.setFactory(factory);  // null ok
         try {
             templates.newTransformer().transform(source, result);
             return result.getDocument();
@@ -237,5 +258,34 @@ public class XSLTransformer {
         catch (TransformerException e) {
             throw new XSLTransformException("Could not perform transformation", e);
         }
+    }
+
+    /**
+     * Sets a custom JDOMFactory to use when building the
+     * transformation result. Use a custom factory to build the tree
+     * with your own subclasses of the JDOM classes.
+     *
+     * @param  factory   the custom <code>JDOMFactory</code> to use or
+     *                   <code>null</code> to use the default JDOM
+     *                   classes.
+     *
+     * @see    #getFactory
+     */
+    public void setFactory(JDOMFactory factory) {
+      this.factory = factory;
+    }
+
+    /**
+     * Returns the custom JDOMFactory used to build the transformation
+     * result.
+     *
+     * @return the custom <code>JDOMFactory</code> used to build the
+     *         transformation result or <code>null</code> if the
+     *         default JDOM classes are being used.
+     *
+     * @see    #setFactory
+     */
+    public JDOMFactory getFactory() {
+      return this.factory;
     }
 }

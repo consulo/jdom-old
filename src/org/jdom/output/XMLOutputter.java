@@ -1,8 +1,8 @@
 /*--
 
- $Id: XMLOutputter.java,v 1.112 2004/09/01 06:08:18 jhunter Exp $
+ $Id: XMLOutputter.java,v 1.117 2009/07/23 05:54:23 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ import org.jdom.*;
  * configured with <code>{@link Format#setExpandEmptyElements}</code> to cause
  * them to be expanded to &lt;empty&gt;&lt;/empty&gt;.
  *
- * @version $Revision: 1.112 $, $Date: 2004/09/01 06:08:18 $
+ * @version $Revision: 1.117 $, $Date: 2009/07/23 05:54:23 $
  * @author  Brett McLaughlin
  * @author  Jason Hunter
  * @author  Jason Reid
@@ -115,7 +115,7 @@ import org.jdom.*;
 public class XMLOutputter implements Cloneable {
 
     private static final String CVS_ID =
-      "@(#) $RCSfile: XMLOutputter.java,v $ $Revision: 1.112 $ $Date: 2004/09/01 06:08:18 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: XMLOutputter.java,v $ $Revision: 1.117 $ $Date: 2009/07/23 05:54:23 $ $Name:  $";
 
     // For normal output
     private Format userFormat = Format.getRawFormat();
@@ -178,7 +178,7 @@ public class XMLOutputter implements Cloneable {
     }
 
     /**
-     * Returns the current format in use by the outputter.  Note the 
+     * Returns the current format in use by the outputter.  Note the
      * Format object returned is a clone of the one used internally.
      */
     public Format getFormat() {
@@ -1118,7 +1118,7 @@ public class XMLOutputter implements Cloneable {
             out.write(prefix);
         }
         out.write("=\"");
-        out.write(uri);
+        out.write(escapeAttributeEntities(uri));
         out.write("\"");
         namespaces.push(ns);
     }
@@ -1189,8 +1189,7 @@ public class XMLOutputter implements Cloneable {
     // * * * * * * * * * * Support methods * * * * * * * * * *
 
     /**
-     * This will print a new line only if the newlines flag was set to
-     * true.
+     * This will print a newline only if indent is not null.
      *
      * @param out <code>Writer</code> to use
      */
@@ -1201,11 +1200,10 @@ public class XMLOutputter implements Cloneable {
     }
 
     /**
-     * This will print indents (only if the newlines flag was
-     * set to <code>true</code>, and indent is non-null).
+     * This will print indents only if indent is not null or the empty string.
      *
      * @param out <code>Writer</code> to use
-     * @param level current indent level (number of tabs)
+     * @param level current indent level
      */
     private void indent(Writer out, int level) throws IOException {
         if (currentFormat.indent == null ||
@@ -1304,7 +1302,7 @@ public class XMLOutputter implements Cloneable {
         }
 
         for (int i = 0; i < str.length(); i++) {
-            if (!isWhitespace(str.charAt(i)))
+            if (!Verifier.isXMLWhitespace(str.charAt(i)))
                 return false;
         }
         return true;
@@ -1314,7 +1312,7 @@ public class XMLOutputter implements Cloneable {
     private boolean startsWithWhite(String str) {
         if ((str != null) &&
             (str.length() > 0) &&
-            isWhitespace(str.charAt(0))) {
+            Verifier.isXMLWhitespace(str.charAt(0))) {
            return true;
         }
         return false;
@@ -1324,17 +1322,8 @@ public class XMLOutputter implements Cloneable {
     private boolean endsWithWhite(String str) {
         if ((str != null) &&
             (str.length() > 0) &&
-            isWhitespace(str.charAt(str.length() - 1))) {
+            Verifier.isXMLWhitespace(str.charAt(str.length() - 1))) {
            return true;
-        }
-        return false;
-    }
-
-    // Determine if a character is a XML whitespace.
-    // XXX should this method be in Verifier
-    private static boolean isWhitespace(char c) {
-        if (c==' ' || c=='\n' || c=='\t' || c=='\r' ){
-            return true;
         }
         return false;
     }
@@ -1348,16 +1337,18 @@ public class XMLOutputter implements Cloneable {
      *
      * @param str <code>String</code> input to escape.
      * @return <code>String</code> with escaped content.
+     * @throws IllegalArgumentException if an entity can not be escaped
      */
     public String escapeAttributeEntities(String str) {
         StringBuffer buffer;
-        char ch;
+        int ch, pos;
         String entity;
         EscapeStrategy strategy = currentFormat.escapeStrategy;
 
         buffer = null;
         for (int i = 0; i < str.length(); i++) {
             ch = str.charAt(i);
+            pos = i;
             switch(ch) {
                 case '<' :
                     entity = "&lt;";
@@ -1386,7 +1377,25 @@ public class XMLOutputter implements Cloneable {
                     entity = "&#xA;";
                     break;
                 default :
-                    if (strategy.shouldEscape(ch)) {
+                	                
+                    if (strategy.shouldEscape((char) ch)) {       
+                    	// Make sure what we are escaping is not the
+                    	// Beginning of a multi-byte character.
+                    	if (Verifier.isHighSurrogate((char) ch)) {
+                    		// This is a the high of a surrogate pair
+                    		i++;                    		
+                    		if (i < str.length()) {
+                    			char low = str.charAt(i);
+                    			if(!Verifier.isLowSurrogate(low)) {
+                    				throw new IllegalDataException("Could not decode surrogate pair 0x" +
+                    						Integer.toHexString(ch) + " / 0x" + Integer.toHexString(low));
+                    			}
+                    			ch = Verifier.decodeSurrogatePair((char) ch, low);
+                    		} else {
+                    			throw new IllegalDataException("Surrogate pair 0x" +
+                						Integer.toHexString(ch) + " truncated");
+                    		}
+                    	}
                         entity = "&#x" + Integer.toHexString(ch) + ";";
                     }
                     else {
@@ -1401,13 +1410,13 @@ public class XMLOutputter implements Cloneable {
                     buffer = new StringBuffer(str.length() + 20);
                     // Copy previous skipped characters and fall through
                     // to pickup current character
-                    buffer.append(str.substring(0, i));
+                    buffer.append(str.substring(0, pos));
                     buffer.append(entity);
                 }
             }
             else {
                 if (entity == null) {
-                    buffer.append(ch);
+                    buffer.append((char) ch);
                 }
                 else {
                     buffer.append(entity);
@@ -1430,18 +1439,20 @@ public class XMLOutputter implements Cloneable {
      *
      * @param str <code>String</code> input to escape.
      * @return <code>String</code> with escaped content.
+     * @throws IllegalArgumentException if an entity can not be escaped
      */
     public String escapeElementEntities(String str) {
         if (escapeOutput == false) return str;
 
         StringBuffer buffer;
-        char ch;
+        int ch, pos;
         String entity;
         EscapeStrategy strategy = currentFormat.escapeStrategy;
 
         buffer = null;
         for (int i = 0; i < str.length(); i++) {
             ch = str.charAt(i);
+            pos = i;
             switch(ch) {
                 case '<' :
                     entity = "&lt;";
@@ -1459,7 +1470,26 @@ public class XMLOutputter implements Cloneable {
                     entity = currentFormat.lineSeparator;
                     break;
                 default :
-                    if (strategy.shouldEscape(ch)) {
+                
+                    if (strategy.shouldEscape((char) ch)) {
+                    	
+                    	//make sure what we are escaping is not the 
+                    	//beginning of a multi-byte character. 
+                    	if(Verifier.isHighSurrogate((char) ch)) {
+                    		//this is a the high of a surrogate pair
+                    		i++;
+                    		if (i < str.length()) {
+                    			char low = str.charAt(i);
+                    			if(!Verifier.isLowSurrogate(low)) {
+                    				throw new IllegalDataException("Could not decode surrogate pair 0x" +
+                    						Integer.toHexString(ch) + " / 0x" + Integer.toHexString(low));
+                    			}
+                    			ch = Verifier.decodeSurrogatePair((char) ch, low);
+                    		} else {
+                    			throw new IllegalDataException("Surrogate pair 0x" +
+                						Integer.toHexString(ch) + " truncated");
+                    		}
+                    	}
                         entity = "&#x" + Integer.toHexString(ch) + ";";
                     }
                     else {
@@ -1474,13 +1504,13 @@ public class XMLOutputter implements Cloneable {
                     buffer = new StringBuffer(str.length() + 20);
                     // Copy previous skipped characters and fall through
                     // to pickup current character
-                    buffer.append(str.substring(0, i));
+                    buffer.append(str.substring(0, pos));
                     buffer.append(entity);
                 }
             }
             else {
                 if (entity == null) {
-                    buffer.append(ch);
+                    buffer.append((char) ch);
                 }
                 else {
                     buffer.append(entity);

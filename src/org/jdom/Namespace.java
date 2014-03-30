@@ -1,8 +1,8 @@
 /*-- 
 
- $Id: Namespace.java,v 1.41 2004/02/27 11:32:57 jhunter Exp $
+ $Id: Namespace.java,v 1.44 2008/12/17 23:22:48 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ import java.util.*;
  * call the getNamespace() method on deserialization to ensure there is one
  * unique Namespace object for any unique prefix/uri pair.
  *
- * @version $Revision: 1.41 $, $Date: 2004/02/27 11:32:57 $
+ * @version $Revision: 1.44 $, $Date: 2008/12/17 23:22:48 $
  * @author  Brett McLaughlin
  * @author  Elliotte Rusty Harold
  * @author  Jason Hunter
@@ -76,22 +76,15 @@ public final class Namespace {
     // XXX May want to use weak references to keep the maps from growing 
     // large with extended use
 
-    // XXX We may need to make the namespaces HashMap synchronized with
-    // reader/writer locks or perhaps make Namespace no longer a flyweight.
-    // As written, multiple put() calls may happen from different threads 
-    // concurrently and cause a ConcurrentModificationException. See
-    // http://lists.denveronline.net/lists/jdom-interest/2000-September/003009.html.
-    // No one has ever reported this over the many years, so don't worry yet.
-
     private static final String CVS_ID =
-      "@(#) $RCSfile: Namespace.java,v $ $Revision: 1.41 $ $Date: 2004/02/27 11:32:57 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: Namespace.java,v $ $Revision: 1.44 $ $Date: 2008/12/17 23:22:48 $ $Name:  $";
 
     /** 
      * Factory list of namespaces. 
      * Keys are <i>prefix</i>&amp;<i>URI</i>. 
      * Values are Namespace objects 
      */
-    private static Map<String, Namespace> namespaces;
+    private static Map<NamespaceKey, Namespace> namespaces;
 
     /** Define a <code>Namespace</code> for when <i>not</i> in a namespace */
     public static final Namespace NO_NAMESPACE = new Namespace("", "");
@@ -111,12 +104,11 @@ public final class Namespace {
      * It sets up storage and required initial values.
      */
     static {
-        namespaces = new HashMap<String, Namespace>();
+        namespaces = new HashMap(16);
 
         // Add the "empty" namespace
-        namespaces.put("&", NO_NAMESPACE);
-        namespaces.put("xml&http://www.w3.org/XML/1998/namespace",
-                       XML_NAMESPACE);
+        namespaces.put(new NamespaceKey(NO_NAMESPACE), NO_NAMESPACE);
+        namespaces.put(new NamespaceKey(XML_NAMESPACE), XML_NAMESPACE);
     }
 
     /**
@@ -133,9 +125,13 @@ public final class Namespace {
     public static Namespace getNamespace(String prefix, String uri) {
         // Sanity checking
         if ((prefix == null) || (prefix.trim().equals(""))) {
+            // Short-cut out for common case of no namespace
+            if ((uri == null) || (uri.trim().equals(""))) {
+                return NO_NAMESPACE;
+            }
             prefix = "";
         }
-        if ((uri == null) || (uri.trim().equals(""))) {
+        else if ((uri == null) || (uri.trim().equals(""))) {
             uri = "";
         }
 
@@ -143,8 +139,11 @@ public final class Namespace {
         // should all be legal. In other words, an illegal namespace won't
         // have been placed in this.  Thus we can do this test before
         // verifying the URI and prefix.
-        String lookup = prefix + '&' + uri;
-        Namespace preexisting = namespaces.get(lookup);
+        NamespaceKey lookup = new NamespaceKey(prefix, uri);
+        Namespace preexisting;
+        synchronized (namespaces) {
+            preexisting = (Namespace) namespaces.get(lookup);
+        }
         if (preexisting != null) {
             return preexisting;
         }
@@ -175,6 +174,7 @@ public final class Namespace {
              "The xml prefix can only be bound to " +
              "http://www.w3.org/XML/1998/namespace");        
         }
+
         // The erratum to Namespaces in XML 1.0 that suggests this 
         // next check is controversial. Not everyone accepts it. 
         if (uri.equals("http://www.w3.org/XML/1998/namespace")) {
@@ -185,7 +185,9 @@ public final class Namespace {
 
         // Finally, store and return
         Namespace ns = new Namespace(prefix, uri);
-        namespaces.put(lookup, ns);
+        synchronized (namespaces) {
+            namespaces.put(lookup, ns);
+        }
         return ns;
     }
 

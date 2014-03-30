@@ -1,8 +1,8 @@
 /*-- 
 
- $Id: JDOMException.java,v 1.23 2004/02/27 11:32:57 jhunter Exp $
+ $Id: JDOMException.java,v 1.26 2008/12/10 00:59:51 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,6 @@ package org.jdom;
 
 import java.io.*;
 import java.lang.reflect.*;
-import java.rmi.*;
 import java.sql.*;
 
 import org.xml.sax.*;
@@ -69,14 +68,14 @@ import org.xml.sax.*;
  * can be caught to handle all JDOM specific problems (some methods may throw
  * {@link java.io.IOException} and such).
  *
- * @version $Revision: 1.23 $, $Date: 2004/02/27 11:32:57 $
+ * @version $Revision: 1.26 $, $Date: 2008/12/10 00:59:51 $
  * @author  Brett McLaughlin
  * @author  Jason Hunter
  */
 public class JDOMException extends Exception {
 
     private static final String CVS_ID = 
-      "@(#) $RCSfile: JDOMException.java,v $ $Revision: 1.23 $ $Date: 2004/02/27 11:32:57 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: JDOMException.java,v $ $Revision: 1.26 $ $Date: 2008/12/10 00:59:51 $ $Name:  $";
 
     /** A wrapped <code>Throwable</code> */
     private Throwable cause;
@@ -291,14 +290,16 @@ public class JDOMException extends Exception {
             return ((ExceptionInInitializerError)parent).getException();
         }
         
-        if (parent instanceof RemoteException) {
-            return ((RemoteException)parent).detail;
+        // The RMI classes are not present in Android's Dalvik VM, so we use reflection to access them.
+
+        Throwable nestedException = getNestedExceptionFromField(parent, "java.rmi.RemoteException", "detail");
+        if (nestedException != null) {
+            return nestedException;
         }
         
-        // These classes are not part of standard JDK 1.1 or 1.2, so we 
-        // use reflection to access them.
+        // These classes are not part of standard JDK 1.1 or 1.2, so again we use reflection to access them.
 
-        Throwable nestedException = getNestedException(parent, "javax.naming.NamingException", "getRootCause");
+        nestedException = getNestedException(parent, "javax.naming.NamingException", "getRootCause");
         if (nestedException != null) {
             return nestedException;
         }
@@ -329,6 +330,33 @@ public class JDOMException extends Exception {
         }
         catch(Exception ex) {
             // Most likely, the desired class is not available in this VM. That's fine.
+            // Even if it's caused by something else, we don't want to display an error
+            // here, since we're already in the process of trying to display the original
+            // error - another error here will just confuse things.
+        }
+
+        return null;
+    }
+
+    // This method is similar to getNestedException() except it looks for a field instead
+    // of a method.
+    private static Throwable getNestedExceptionFromField(
+                                 Throwable parent, String className, String fieldName) {
+        try {
+            // See if this Throwable is of the desired type, by using isAssignableFrom().
+            Class testClass = Class.forName(className);
+            Class objectClass = parent.getClass();
+            if (testClass.isAssignableFrom(objectClass)) {
+                // Use reflection to call the specified method.
+                Class[] argClasses = new Class[0];
+                Field field = testClass.getField(fieldName);
+                return (Throwable)field.get(parent);
+            }
+        }
+        catch(Exception ex) {
+            // Most likely, the desired class is not available in this VM. That's fine.
+            // Could be that the named field isn't of type Throwable, but that should happen
+            // with proper call usage.
             // Even if it's caused by something else, we don't want to display an error
             // here, since we're already in the process of trying to display the original
             // error - another error here will just confuse things.

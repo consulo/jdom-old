@@ -1,8 +1,8 @@
 /*--
 
- $Id: SAXHandler.java,v 1.68 2004/08/31 06:14:05 jhunter Exp $
+ $Id: SAXHandler.java,v 1.73 2007/11/10 05:29:00 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -56,17 +56,33 @@
 
 package org.jdom.input;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import org.jdom.*;
-import org.xml.sax.*;
-import org.xml.sax.ext.*;
-import org.xml.sax.helpers.*;
+import org.jdom.Attribute;
+import org.jdom.DefaultJDOMFactory;
+import org.jdom.Document;
+import org.jdom.Element;
+import org.jdom.EntityRef;
+import org.jdom.JDOMFactory;
+import org.jdom.Namespace;
+import org.jdom.Parent;
+import org.xml.sax.Attributes;
+import org.xml.sax.DTDHandler;
+import org.xml.sax.Locator;
+import org.xml.sax.SAXException;
+import org.xml.sax.ext.DeclHandler;
+import org.xml.sax.ext.LexicalHandler;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * A support class for {@link SAXBuilder}.
  *
- * @version $Revision: 1.68 $, $Date: 2004/08/31 06:14:05 $
+ * @version $Revision: 1.73 $, $Date: 2007/11/10 05:29:00 $
  * @author  Brett McLaughlin
  * @author  Jason Hunter
  * @author  Philip Nelson
@@ -78,7 +94,7 @@ public class SAXHandler extends DefaultHandler implements LexicalHandler,
                                                           DTDHandler {
 
     private static final String CVS_ID =
-      "@(#) $RCSfile: SAXHandler.java,v $ $Revision: 1.68 $ $Date: 2004/08/31 06:14:05 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: SAXHandler.java,v $ $Revision: 1.73 $ $Date: 2007/11/10 05:29:00 $ $Name:  $";
 
     /** Hash table to map SAX attribute type names to JDOM attribute types. */
     private static final Map attrNameToTypeMap = new HashMap(13);
@@ -134,6 +150,9 @@ public class SAXHandler extends DefaultHandler implements LexicalHandler,
 
     /** Whether to ignore ignorable whitespace */
     private boolean ignoringWhite = false;
+
+    /** Whether to ignore text containing all whitespace */
+    private boolean ignoringBoundaryWhite = false;
 
     /** The SAX Locator object provided by the parser */
     private Locator locator;
@@ -286,6 +305,30 @@ public class SAXHandler extends DefaultHandler implements LexicalHandler,
      */
     public void setIgnoringElementContentWhitespace(boolean ignoringWhite) {
         this.ignoringWhite = ignoringWhite;
+    }
+
+    /**
+     * Specifies whether or not the parser should elminate text() nodes
+     * containing only whitespace when building the document.  See
+     * {@link SAXBuilder#setIgnoringBoundaryWhitespace(boolean)}.
+     *
+     * @param ignoringBoundaryWhite Whether to ignore only whitespace content
+     */
+    public void setIgnoringBoundaryWhitespace(boolean ignoringBoundaryWhite) {
+        this.ignoringBoundaryWhite = ignoringBoundaryWhite;
+    }
+
+    /**
+     * Returns whether or not the parser will elminate element content
+     * containing only whitespace.
+     *
+     * @return <code>boolean</code> - whether only whitespace content will
+     * be ignored during build.
+     *
+     * @see #setIgnoringBoundaryWhitespace
+     */
+    public boolean getIgnoringBoundaryWhitespace() {
+        return ignoringBoundaryWhite;
     }
 
     /**
@@ -493,69 +536,168 @@ public class SAXHandler extends DefaultHandler implements LexicalHandler,
                              String qName, Attributes atts)
                              throws SAXException {
         if (suppress) return;
+        String prefix = "";
+        
+        // If QName is set, then set prefix and local name as necessary
+        if (!"".equals(qName)) {
+        	int colon = qName.indexOf(':');
 
-        Element element = null;
+        	if (colon > 0) {
+        		prefix = qName.substring(0, colon);
+        	}
 
-        if ((namespaceURI != null) && (!namespaceURI.equals(""))) {
-            String prefix = "";
-
-            // Determine any prefix on the Element
-            if (!qName.equals(localName)) {
-                int split = qName.indexOf(":");
-                prefix = qName.substring(0, split);
-            }
-            Namespace elementNamespace =
-                Namespace.getNamespace(prefix, namespaceURI);
-            element = factory.element(localName, elementNamespace);
-        } else {
-            element = factory.element(localName);
+        	// If local name is not set, try to get it from the QName
+        	if ((localName == null) || (localName.equals(""))) {
+        		localName = qName.substring(colon + 1);
+        	}
         }
+        // At this point either prefix and localName are set correctly or
+        // there is an error in the parser.
 
-        // Take leftover declared namespaces and add them to this element's
-        // map of namespaces
-        if (declaredNamespaces.size() > 0) {
-            transferNamespaces(element);
-        }
+        Namespace namespace = Namespace.getNamespace(prefix, namespaceURI);
+        Element element = factory.element(localName, namespace);
 
-        // Handle attributes
-        for (int i=0, len=atts.getLength(); i<len; i++) {
-            Attribute attribute = null;
+		// Take leftover declared namespaces and add them to this element's
+		// map of namespaces
+		if (declaredNamespaces.size() > 0) {
+			transferNamespaces(element);
+		}
 
-            String attLocalName = atts.getLocalName(i);
-            String attQName = atts.getQName(i);
-            int attType = getAttributeType(atts.getType(i));
+		flushCharacters();
 
-            // Bypass any xmlns attributes which might appear, as we got
-            // them already in startPrefixMapping().
-            // This is sometimes necessary when SAXHandler is used with
-            // another source than SAXBuilder, as with JDOMResult.
-            if (attQName.startsWith("xmlns:") || attQName.equals("xmlns")) {
-                continue;
-            }
+		if (atRoot) {
+			document.setRootElement(element);  // XXX should we use a factory call?
+			atRoot = false;
+		} else {
+			factory.addContent(getCurrentElement(), element);
+		}
+		currentElement = element;
 
-            if (!attQName.equals(attLocalName)) {
-                String attPrefix = attQName.substring(0, attQName.indexOf(":"));
-                Namespace attNs = Namespace.getNamespace(attPrefix,
-                                                         atts.getURI(i));
+		// Handle attributes
+		for (int i=0, len=atts.getLength(); i<len; i++) {
 
-                attribute = factory.attribute(attLocalName, atts.getValue(i),
-                                              attType, attNs);
-            } else {
-                attribute = factory.attribute(attLocalName, atts.getValue(i),
-                                              attType);
-            }
-            factory.setAttribute(element, attribute);
-        }
+			String attPrefix = "";
+			String attLocalName = atts.getLocalName(i);
+			String attQName = atts.getQName(i);
 
-        flushCharacters();
+			// If attribute QName is set, then set attribute prefix and
+			// attribute local name as necessary
+			if (!attQName.equals("")) {
+				// Bypass any xmlns attributes which might appear, as we got
+				// them already in startPrefixMapping(). This is sometimes
+				// necessary when SAXHandler is used with another source than
+				// SAXBuilder, as with JDOMResult.
+				if (attQName.startsWith("xmlns:") || attQName.equals("xmlns")) {
+					continue;
+				}
 
-        if (atRoot) {
-            document.setRootElement(element);  // XXX should we use a factory call?
-            atRoot = false;
-        } else {
-            factory.addContent(getCurrentElement(), element);
-        }
-        currentElement = element;
+				int attColon = attQName.indexOf(':');
+
+				if (attColon > 0) {
+					attPrefix = attQName.substring(0, attColon);
+				}
+
+				// If localName is not set, try to get it from the QName
+				if ("".equals(attLocalName)) {
+					attLocalName = attQName.substring(attColon + 1);
+				}
+			}
+			// At this point either attPrefix and attLocalName are set
+			// correctly or there is an error in the parser.
+
+			int attType = getAttributeType(atts.getType(i));
+			String attValue = atts.getValue(i);
+			String attURI = atts.getURI(i);
+			
+			if ("xmlns".equals(attLocalName) || 
+					"xmlns".equals(attPrefix) || 
+					"http://www.w3.org/2000/xmlns/".equals(attURI)) {
+				// use the actual Namespace to check too, because, in theory, a
+				// namespace-aware parser does not need to set the qName unless
+				// the namespace-prefixes feature is set as well.
+				continue;
+			}
+
+			// just one thing to sort out....
+			// the prefix for the namespace.
+			if (!"".equals(attURI) && "".equals(attPrefix)) {
+                // the localname and qName are the same, but there is a
+                // Namspace URI. We need to figure out the namespace prefix.
+                // this is an unusual condition. Currently the only known trigger
+                // is when there is a fixed/defaulted attribute from a validating
+                // XMLSchema, and the attribute is in a different namespace
+                // than the rest of the document, this happens whenever there
+                // is an attribute definition that has form="qualified".
+                //  <xs:attribute name="attname" form="qualified" ... />
+                // or the schema sets attributeFormDefault="qualified"
+                Element p = element;
+                // We need to ensure that a particular prefix has not been
+                // overridden at a lower level than what we are expecting.
+                // track all prefixes to ensure they are not changed lower
+                // down.
+                HashSet overrides = new HashSet();
+                uploop: do {
+                    // Search up the Element tree looking for a prefixed namespace
+                    // matching our attURI
+                    if (p.getNamespace().getURI().equals(attURI)
+                            && !overrides.contains(p.getNamespacePrefix())
+                            && !"".equals(element.getNamespace().getPrefix())) {
+                        // we need a prefix. It's impossible to have a namespaced
+                        // attribute if there is no prefix for that attribute.
+                        attPrefix = p.getNamespacePrefix();
+                        break uploop;
+                    }
+                    overrides.add(p.getNamespacePrefix());
+                    for (Iterator it = p.getAdditionalNamespaces().iterator();
+                            it.hasNext(); ) {
+                        Namespace ns = (Namespace)it.next();
+                        if (!overrides.contains(ns.getPrefix())
+                                 && attURI.equals(ns.getURI())) {
+                            attPrefix = ns.getPrefix();
+                            break uploop;
+                        }
+                        overrides.add(ns.getPrefix());
+                    }
+                    for (Iterator it = p.getAttributes().iterator();
+                            it.hasNext(); ) {
+                        Namespace ns = ((Attribute)it.next()).getNamespace();
+                        if (!overrides.contains(ns.getPrefix())
+                                 && attURI.equals(ns.getURI())) {
+                            attPrefix = ns.getPrefix();
+                            break uploop;
+                        }
+                        overrides.add(ns.getPrefix());
+                    }
+                    p = p.getParentElement();
+                } while (p != null);
+                if ("".equals(attPrefix)) {
+                    // we cannot find a 'prevailing' namespace that has a prefix
+                    // that is for this namespace.
+                    // This basically means that there's an XMLSchema, for the
+                    // DEFAULT namespace, and there's a defaulted/fixed
+                    // attribute definition in the XMLSchema that's targeted
+                    // for this namespace,... but, the user has either not
+                    // declared a prefixed version of the namespace, or has
+                    // re-declared the same prefix at a lower level with a
+                    // different namespace.
+                    // All of these things are possible.
+                    // Create some sort of default prefix.
+                    int cnt = 0;
+                    String base = "attns";
+                    String pfx = base + cnt;
+                    while (overrides.contains(pfx)) {
+                        cnt++;
+                        pfx = base + cnt;
+                    }
+                    attPrefix = pfx;
+                }
+			}
+			Namespace attNs = Namespace.getNamespace(attPrefix, attURI);
+				
+            Attribute attribute = factory.attribute(attLocalName, attValue,
+				                                                    attType, attNs);
+			factory.setAttribute(element, attribute);
+		}
     }
 
     /**
@@ -620,7 +762,14 @@ public class SAXHandler extends DefaultHandler implements LexicalHandler,
      * @throws SAXException when things go wrong
      */
     protected void flushCharacters() throws SAXException {
-        flushCharacters(textBuffer.toString());
+        if (ignoringBoundaryWhite) {
+            if (!textBuffer.isAllWhitespace()) {
+                flushCharacters(textBuffer.toString());
+            }
+        }
+        else {
+            flushCharacters(textBuffer.toString());
+        }
         textBuffer.clear();
     }
 

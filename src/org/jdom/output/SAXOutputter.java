@@ -1,8 +1,8 @@
 /*--
 
- $Id: SAXOutputter.java,v 1.37 2004/09/03 06:11:00 jhunter Exp $
+ $Id: SAXOutputter.java,v 1.40 2007/11/10 05:29:01 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@ import org.xml.sax.helpers.*;
  * these are supposed to be invoked when the document is parsed and at this
  * point the document exists in memory and is known to have no errors. </p>
  *
- * @version $Revision: 1.37 $, $Date: 2004/09/03 06:11:00 $
+ * @version $Revision: 1.40 $, $Date: 2007/11/10 05:29:01 $
  * @author  Brett McLaughlin
  * @author  Jason Hunter
  * @author  Fred Trimble
@@ -91,7 +91,7 @@ import org.xml.sax.helpers.*;
 public class SAXOutputter {
 
     private static final String CVS_ID =
-      "@(#) $RCSfile: SAXOutputter.java,v $ $Revision: 1.37 $ $Date: 2004/09/03 06:11:00 $ $Name: jdom_1_0 $";
+      "@(#) $RCSfile: SAXOutputter.java,v $ $Revision: 1.40 $ $Date: 2007/11/10 05:29:01 $ $Name:  $";
 
     /** Shortcut for SAX namespaces core feature */
     private static final String NAMESPACES_SAX_FEATURE =
@@ -897,7 +897,9 @@ public class SAXOutputter {
         elementContent(element.getContent(), namespaces);
 
         // update locator
-        locator.setNode(element);
+        if (locator != null) {
+          locator.setNode(element);
+        }
 
         // contentHandler.endElement()
         endElement(element);
@@ -947,6 +949,35 @@ public class SAXOutputter {
             Iterator itr = additionalNamespaces.iterator();
             while (itr.hasNext()) {
                 ns = (Namespace)itr.next();
+                String prefix = ns.getPrefix();
+                String uri = namespaces.getURI(prefix);
+                if (!ns.getURI().equals(uri)) {
+                    namespaces.push(ns);
+                    nsAtts = this.addNsAttribute(nsAtts, ns);
+                    try {
+                        contentHandler.startPrefixMapping(prefix, ns.getURI());
+                    }
+                    catch (SAXException se) {
+                        throw new JDOMException(
+                            "Exception in startPrefixMapping", se);
+                    }
+                }
+            }
+        }
+        
+        // Fire any namespace on Attributes that were not explicity added as additionals.
+        List attributes = element.getAttributes();
+        if (attributes != null) {
+            Iterator itr = attributes.iterator();
+            while (itr.hasNext()) {
+                Attribute att = (Attribute)itr.next();
+                ns = att.getNamespace();
+                if (ns == Namespace.NO_NAMESPACE) {
+                	// Issue #60
+                	// no-prefix attributes are always in the NO_NAMESPACE
+                	// namespace. This prefix mapping is implied for Attributes.
+                	continue;
+                }
                 String prefix = ns.getPrefix();
                 String uri = namespaces.getURI(prefix);
                 if (!ns.getURI().equals(uri)) {
@@ -1087,7 +1118,9 @@ public class SAXOutputter {
     private void elementContent(Content node, NamespaceStack namespaces)
                       throws JDOMException {
         // update locator
-        locator.setNode(node);
+        if (locator != null) {
+          locator.setNode(node);
+        }
 
         if (node instanceof Element) {
             element((Element) node, namespaces);
@@ -1215,11 +1248,22 @@ public class SAXOutputter {
             if (atts == null) {
                 atts = new AttributesImpl();
             }
-            atts.addAttribute("",                          // namespace
-                              "",                          // local name
-                              "xmlns:" + ns.getPrefix(),   // qualified name
-                              "CDATA",                     // type
-                              ns.getURI());                // value
+
+            String prefix = ns.getPrefix();
+            if (prefix.equals("")) {
+                atts.addAttribute("",                        // namespace
+                                  "",                        // local name
+                                  "xmlns",                   // qualified name
+                                  "CDATA",                   // type
+                                  ns.getURI());              // value
+            }
+            else {
+                atts.addAttribute("",                        // namespace
+                                  "",                        // local name
+                                  "xmlns:" + ns.getPrefix(), // qualified name
+                                  "CDATA",                   // type
+                                  ns.getURI());              // value
+            }
         }
         return atts;
     }

@@ -1,8 +1,8 @@
 /*--
 
- $Id: Format.java,v 1.10 2004/09/07 06:37:20 jhunter Exp $
+ $Id: Format.java,v 1.14 2009/07/23 05:54:23 jhunter Exp $
 
- Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
+ Copyright (C) 2000-2007 Jason Hunter & Brett McLaughlin.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,7 @@
 package org.jdom.output;
 
 import java.lang.reflect.Method;
+import org.jdom.Verifier;
 
 /**
  * Class to encapsulate XMLOutputter format options.
@@ -68,13 +69,13 @@ import java.lang.reflect.Method;
  * Several modes are available to effect the way textual content is printed.
  * See the documentation for {@link TextMode} for details.
  *
- * @version $Revision: 1.10 $, $Date: 2004/09/07 06:37:20 $
+ * @version $Revision: 1.14 $, $Date: 2009/07/23 05:54:23 $
  * @author Jason Hunter
  */
 public class Format implements Cloneable {
 
     private static final String CVS_ID =
-            "@(#) $RCSfile: Format.java,v $ $Revision: 1.10 $ $Date: 2004/09/07 06:37:20 $ $Name: jdom_1_0 $";
+            "@(#) $RCSfile: Format.java,v $ $Revision: 1.14 $ $Date: 2009/07/23 05:54:23 $ $Name:  $";
 
     /**
      * Returns a new Format object that performs no whitespace changes, uses
@@ -189,10 +190,9 @@ public class Format implements Cloneable {
 
     /**
      * This will set the newline separator (<code>lineSeparator</code>).
-     * The default is <code>\r\n</code>. Note that if the "newlines"
-     * property is false, this value is irrelevant.  To make it output
+     * The default is <code>\r\n</code>.  To make it output
      * the system default line ending string, call
-     * <code>setLineSeparator(System.getProperty("line.separator"))</code>
+     * <code>setLineSeparator(System.getProperty("line.separator"))</code>.
      *
      * <p>
      * To output "UNIX-style" documents, call
@@ -207,6 +207,12 @@ public class Format implements Cloneable {
      * embedded inside a text node, and you do not set TextMode.NORMALIZE,
      * then the newlines will be output
      * verbatim, as "\n" which is how parsers normalize them.
+     * </p>
+     *
+     * <p>
+     * If the format's "indent" property is null (as is the default
+     * for the Raw and Compact formats), then this value only effects the
+     * newlines written after the declaration and doctype.
      * </p>
      *
      * @see #setTextMode
@@ -364,19 +370,14 @@ public class Format implements Cloneable {
     /**
      * This will set the indent <code>String</code> to use; this
      * is usually a <code>String</code> of empty spaces. If you pass
-     * null, or the empty string (""), then no indentation will
-     * happen.  Default: none (null)
+     * the empty string (""), then no indentation will happen but newlines
+     * will still be generated.  Passing null will result in no indentation
+     * and no newlines generated.  Default: none (null)
      *
      * @param indent <code>String</code> to use for indentation.
      * @return a pointer to this Format for chaining
      */
     public Format setIndent(String indent) {
-        // if passed the empty string, change it to null, for marginal
-        // performance gains later (can compare to null first instead
-        // of calling equals())
-        if ("".equals(indent)) {
-            indent = null;
-        }
         this.indent = indent;
         return this;
     }
@@ -413,7 +414,7 @@ public class Format implements Cloneable {
         return encoding;
     }
 
-    protected Object clone() {
+    public Object clone() {
         Format format = null;
 
         try {
@@ -468,7 +469,10 @@ public class Format implements Cloneable {
 
         public boolean shouldEscape(char ch) {
             if (bits == 16) {
-                return false;
+                if (Verifier.isHighSurrogate(ch))
+                    return true;  // Safer this way per http://unicode.org/faq/utf_bom.html#utf8-4
+                else
+                    return false;
             }
             if (bits == 8) {
                 if ((int) ch > 255)
@@ -483,6 +487,9 @@ public class Format implements Cloneable {
                     return false;
             }
             else {
+                if (Verifier.isHighSurrogate(ch))
+                    return true;  // Safer this way per http://unicode.org/faq/utf_bom.html#utf8-4
+                
                 if (canEncode != null && encoder != null) {
                     try {
                         Boolean val = (Boolean) canEncode.invoke(encoder, new Object[]{new Character(ch)});
