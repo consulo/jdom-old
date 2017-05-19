@@ -1,6 +1,7 @@
-import java.io.File;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.jdom.Document;
 import org.jdom.Element;
@@ -54,7 +55,7 @@ public class IoTest extends TestCase
 		String testName = getName();
 		testName = testName.substring(4, testName.length());
 
-		FileReader reader = new FileReader(new File("testData/", testName + ".xml"));
+		Reader reader = new InputStreamReader(getClass().getResourceAsStream("/" + testName + ".xml"), StandardCharsets.UTF_8);
 		StringBuilder builder = new StringBuilder();
 		int i = -1;
 		while((i = reader.read()) != -1)
