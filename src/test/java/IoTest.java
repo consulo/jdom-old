@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.Text;
+import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 import junit.framework.TestCase;
 
@@ -50,7 +51,10 @@ public class IoTest extends TestCase
 	{
 		StringWriter stringWriter = new StringWriter();
 
-		new XMLOutputter().output(content, stringWriter);
+		Format format = Format.getRawFormat();
+		format.setLineSeparator("\n");
+
+		new XMLOutputter(format).output(content, stringWriter);
 
 		String testName = getName();
 		testName = testName.substring(4, testName.length());
