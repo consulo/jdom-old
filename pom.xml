@@ -56,6 +56,11 @@
 					<module>
 						<open>true</open>
 						<name>jdom</name>
+						<exports>
+							<export>
+								<package>org.jdom</package>
+							</export>
+						</exports>
 					</module>
 				</configuration>
 				<executions>
