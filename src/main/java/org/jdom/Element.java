@@ -56,13 +56,17 @@
 
 package org.jdom;
 
-import org.jdom.filter.ElementFilter;
-import org.jdom.filter.Filter;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.jdom.filter.ElementFilter;
+import org.jdom.filter.Filter;
 
 /**
  * An XML element. Methods allow the user to get and manipulate its child
@@ -1592,4 +1596,33 @@ public class Element extends Content implements Parent {
         return deletedSome;
     }
 
+
+	/**
+	 * Indicate whether this Element has any attributes.
+	 * Where possible you should call this method before calling getAttributes()
+	 * because calling getAttributes() will create the necessary Attribute List
+	 * memory structures, even if there are no Attributes attached to the
+	 * Element. Calling hasAttributes() first can save memory.
+	 *
+	 * @return true if this Element has attributes.
+	 */
+	public boolean hasAttributes()
+	{
+		return attributes != null && !attributes.isEmpty();
+	}
+
+	/**
+	 * Indicate whether this Element has any additional Namespace declarations.
+	 * Where possible you should call this method before calling
+	 * {@link #getAdditionalNamespaces()} because calling getAttributes() will
+	 * create an unnecessary List even if there are no Additional Namespaces
+	 * attached to the Element. Calling this method first can save memory and
+	 * time.
+	 *
+	 * @return true if this Element has additional Namespaces.
+	 */
+	public boolean hasAdditionalNamespaces()
+	{
+		return additionalNamespaces != null && !additionalNamespaces.isEmpty();
+	}
 }
